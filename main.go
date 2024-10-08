@@ -24,6 +24,7 @@ func main() {
 			continue
 		}
 
+		// Creating a new goroutine for each connection so that the server can handle multiple connections concurrently.
 		go handleConnection(conn)
 	}
 }
@@ -32,7 +33,6 @@ func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
 	for {
-		fmt.Println("NEW-----------------------------------------------")
 		resp := NewResp(conn)
 		writer := NewWriter(conn)
 		aof, err := NewAof("aof.txt")
@@ -47,8 +47,10 @@ func handleConnection(conn net.Conn) {
 			return
 		}
 
-		fmt.Println("Received data:", val)
+		// Comment this out to see the raw data
+		// fmt.Println("Received data:", val)
 
+		// The type is expected to be an array because commands are sent over RESP as arrays.
 		if val.typ != "array" {
 			fmt.Println("Invalid request, array expected")
 			writer.Write(Value{typ: "error", str: "Invalid request, array expected"})
@@ -61,17 +63,21 @@ func handleConnection(conn net.Conn) {
 			continue
 		}
 
+		// RESP stores the command as a bulk string.
 		command := strings.ToUpper(val.array[0].bulk)
 		args := val.array[1:]
 
 		handler, ok := Handlers[command]
 		if !ok {
-			fmt.Println("Invalid request, command not found")
-			writer.Write(Value{typ: "error", str: "Invalid request, command not found"})
+			if command != "COMMAND" && command != "INFO" {
+				fmt.Printf("Invalid request, command not found: %s\n", command)
+			}
+			writer.Write(Value{typ: "error", str: fmt.Sprintf("Invalid request, command not found: %s", command)})
 			continue
 		}
 
 		if command == "SET" || command == "HSET" {
+			// Adding only write commands to the AOF file, as read commands doesn't change state of data.
 			aof.Write(val)
 		}
 

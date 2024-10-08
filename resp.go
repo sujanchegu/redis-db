@@ -34,7 +34,6 @@ func NewResp(rd io.Reader) *Resp {
 }
 
 func (r *Resp) ReadLine() (line []byte, n int, err error) {
-	fmt.Println("READ LINE")
 	for {
 		b, err := r.reader.ReadByte()
 		if err != nil {
@@ -50,12 +49,10 @@ func (r *Resp) ReadLine() (line []byte, n int, err error) {
 		n++
 	}
 
-	fmt.Println("READ LINE", string(line))
 	return
 }
 
 func (r *Resp) ReadInteger() (x int, n int, err error) {
-	fmt.Println("READ INTEGER")
 	line, n, err := r.ReadLine()
 	if err != nil {
 		return 0, 0, err
@@ -66,7 +63,6 @@ func (r *Resp) ReadInteger() (x int, n int, err error) {
 		return 0, 0, err
 	}
 
-	fmt.Println("INTEGER", x)
 	return
 }
 
@@ -80,15 +76,12 @@ func (r *Resp) readArray() (Value, error) {
 		return Value{}, err
 	}
 
-	fmt.Println("ARRAY LEN", len)
 	for i := 0; i < len; i++ {
-		fmt.Println("ARRAY ITER", i)
 		val, err := r.Read()
 		if err != nil {
 			return Value{}, err
 		}
 		v.array = append(v.array, val)
-		fmt.Println("ARRAY APPEND", val)
 	}
 
 	return v, nil
@@ -120,13 +113,12 @@ func (r *Resp) Read() (Value, error) {
 		return Value{}, err
 	}
 
-	fmt.Println("TYPE", string(_type))
+	// Uncomment this to see the raw data
+	// fmt.Println("TYPE", string(_type))
 	switch _type {
 		case ARRAY:
-			fmt.Println("ARRAY")
 			return r.readArray()
 		case BULK:
-			fmt.Println("BULK")
 			return r.readBulk()
 		default:
 			fmt.Printf("Unknown type: %v", string(_type))
